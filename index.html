@@ -4,102 +4,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mythic Battles TCG</title>
-  <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
-
-<!-- Firebase App (compat) -->
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyC2xTO-QS53VLP4g-rTI9tyTzhekh-dXEo",
-    authDomain: "mythicbattles-2f50e.firebaseapp.com",
-    projectId: "mythicbattles-2f50e",
-    storageBucket: "mythicbattles-2f50e.appspot.com",
-    messagingSenderId: "520916571708",
-    appId: "1:520916571708:web:3da9be6520d22b33fad539"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-</script>
-
+  <title>Mythic Battles</title>
+  <style>
+    body { font-family: sans-serif; background: #111; color: white; padding: 2rem; }
+    button { padding: 0.5rem 1rem; margin: 0.5rem; font-size: 1rem; }
+    .card { border: 2px solid white; padding: 1rem; margin: 1rem 0; }
+  </style>
 </head>
-<body onload="selectPack('Starter Pack')">
-  <header>
-    <h1>Mythic Battles TCG</h1>
-    <nav>
-      <ul>
-        <li><a href="#demo">Demo</a></li>
-        <li><a href="#collection">Collection</a></li>
-        <li><a href="#rules">Rules</a></li>
-        <li><a href="#packs">Packs</a></li>
-      </ul>
-    </nav>
-  </header>
+<body>
+  <h1>Mythic Battles</h1>
+  <div id="auth-section">
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="loginBtn">Login</button>
+    <button id="signupBtn">Signup</button>
+  </div>
 
-  <section id="hero">
-    <h2>Enter the Realm of Mythic Creatures</h2>
-    <p>Collect. Battle. Evolve. The next-gen card game for heroes.</p>
+  <div id="game-section" style="display:none;">
+    <button id="logoutBtn">Logout</button>
+    <button id="openPackBtn">Open a Free Pack</button>
+    <div id="pack"></div>
+    <button id="battleBtn">Draw & Battle</button>
+    <div id="battleLog"></div>
+  </div>
 
-    <div class="packs">
-      <div class="pack" onclick="selectPack('Starter Pack')">Starter Pack</div>
-      <div class="pack" onclick="selectPack('Legendary Pack')">Legendary Pack</div>
-      <div class="pack" onclick="selectPack('Mythic Vault')">Mythic Vault</div>
-    </div>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
-    <div id="pack-info"></div>
-    <button onclick="openPack()">Open a Free Pack</button>
-    <div id="pack-stats"></div>
-    <div class="card-gallery"></div>
-  </section>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC2xTO-QS53VLP4g-rTI9tyTzhekh-dXEo",
+      authDomain: "mythicbattles-2f50e.firebaseapp.com",
+      projectId: "mythicbattles-2f50e",
+      storageBucket: "mythicbattles-2f50e.appspot.com",
+      messagingSenderId: "520916571708",
+      appId: "1:520916571708:web:3da9be6520d22b33fad539"
+    };
 
-  <section id="demo">
-    <h2>Quick Battle Demo</h2>
-    <div id="battlefield">
-      <div class="card-slot" id="player-card">Your Card</div>
-      <div class="vs">VS</div>
-      <div class="card-slot" id="enemy-card">Enemy Card</div>
-    </div>
-    <button onclick="startBattle()">Draw & Battle</button>
-    <p id="battle-result"></p>
-  </section>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  <section id="collection">
-    <h2>Your Collection</h2>
-    <div class="collection-gallery"></div>
-  </section>
+    const cardPool = [
+      { id: 1, name: "Inferno Dragon", atk: 8, def: 6, sp: "Burn", rarity: "Rare", color: "#ff4500" },
+      { id: 2, name: "Water Serpent", atk: 5, def: 7, sp: "Flood", rarity: "Uncommon", color: "#0077ff" },
+      { id: 3, name: "Stone Golem", atk: 6, def: 9, sp: "Stun", rarity: "Common", color: "#888888" }
+    ];
 
-  <section id="rules">
-    <h2>How to Play</h2>
-    <ol>
-      <li>Each player draws 1 card.</li>
-      <li>Each card has Attack, Defense, and Special Power.</li>
-      <li>The card with higher Attack wins, unless the opponent's Defense is greater.</li>
-      <li>Special Power can override if triggered (chance-based).</li>
-    </ol>
-  </section>
+    let userId = null;
 
-  <footer>
-    <p>&copy; 2025 Mythic Battles TCG. All Rights Reserved.</p>
-  </footer>
-  
-  
+    const emailEl = document.getElementById("email");
+    const passwordEl = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const openPackBtn = document.getElementById("openPackBtn");
+    const battleBtn = document.getElementById("battleBtn");
+    const packDiv = document.getElementById("pack");
+    const battleLog = document.getElementById("battleLog");
+    const gameSection = document.getElementById("game-section");
+    const authSection = document.getElementById("auth-section");
 
-<button id="logoutBtn" style="position: fixed; top: 10px; right: 10px; z-index: 999;">Logout</button>
-
-
-<script>
-  auth.onAuthStateChanged((user) => {
-    if (!user) {
-      window.location.href = "login.html";
+    function displayCard(card) {
+      return `<div class='card' style='background:${card.color};'><strong>${card.name}</strong><br>ATK: ${card.atk} | DEF: ${card.def}<br>${card.sp} (${card.rarity})</div>`;
     }
-  });
-</script>
-</body>
 
+    async function openPack() {
+      const pack = [];
+      for (let i = 0; i < 3; i++) {
+        const card = cardPool[Math.floor(Math.random() * cardPool.length)];
+        pack.push(card);
+        await db.collection("users").doc(userId).collection("collection").add(card);
+      }
+      packDiv.innerHTML = pack.map(displayCard).join('');
+    }
+
+    async function drawAndBattle() {
+      const snapshot = await db.collection("users").doc(userId).collection("collection").get();
+      const cards = snapshot.docs.map(doc => doc.data());
+      if (cards.length < 2) {
+        battleLog.innerText = "You need more cards!";
+        return;
+      }
+      const [a, b] = [cards[0], cards[1]];
+      const result = a.atk > b.def ? `${a.name} wins!` : `${b.name} defends successfully!`;
+      battleLog.innerHTML = `<div>${displayCard(a)} VS ${displayCard(b)}</div><strong>${result}</strong>`;
+    }
+
+    loginBtn.onclick = () => {
+      auth.signInWithEmailAndPassword(emailEl.value, passwordEl.value)
+        .then(() => location.reload())
+        .catch(err => alert(err.message));
+    };
+
+    signupBtn.onclick = () => {
+      auth.createUserWithEmailAndPassword(emailEl.value, passwordEl.value)
+        .then(() => location.reload())
+        .catch(err => alert(err.message));
+    };
+
+    logoutBtn.onclick = () => {
+      auth.signOut().then(() => location.reload());
+    };
+
+    openPackBtn.onclick = openPack;
+    battleBtn.onclick = drawAndBattle;
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        userId = user.uid;
+        gameSection.style.display = "block";
+        authSection.style.display = "none";
+      } else {
+        gameSection.style.display = "none";
+        authSection.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
 
 </html>
