@@ -7,6 +7,26 @@
   <title>Mythic Battles TCG</title>
   <link rel="stylesheet" href="style.css" />
   <script defer src="script.js"></script>
+
+<!-- Firebase App (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC2xTO-QS53VLP4g-rTI9tyTzhekh-dXEo",
+    authDomain: "mythicbattles-2f50e.firebaseapp.com",
+    projectId: "mythicbattles-2f50e",
+    storageBucket: "mythicbattles-2f50e.appspot.com",
+    messagingSenderId: "520916571708",
+    appId: "1:520916571708:web:3da9be6520d22b33fad539"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+</script>
+
 </head>
 <body onload="selectPack('Starter Pack')">
   <header>
@@ -66,30 +86,20 @@
   <footer>
     <p>&copy; 2025 Mythic Battles TCG. All Rights Reserved.</p>
   </footer>
-  <script type="module" src="auth.js"></script>
-  <script type="module" src="script.js"></script>
+  
+  
 
 <button id="logoutBtn" style="position: fixed; top: 10px; right: 10px; z-index: 999;">Logout</button>
-<script type="module">
-import { onAuthStateChanged, signOut, getAuth } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-const auth = getAuth();
-const logoutBtn = document.getElementById("logoutBtn");
 
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    logoutBtn.style.display = "block";
-  } else {
-    logoutBtn.style.display = "none";
-  }
-});
-
-logoutBtn.onclick = () => {
-  signOut(auth).then(() => {
-    window.location.href = "login.html";
+<script>
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      window.location.href = "login.html";
+    }
   });
-};
 </script>
 </body>
+
 
 </html>
